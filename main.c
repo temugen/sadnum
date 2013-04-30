@@ -697,11 +697,11 @@ const int happiness[] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
 
 unsigned int sum_of_squares(unsigned int num) {
     unsigned int sum = 0;
-    do {
+    while(num > 0) {
         unsigned int digits = num % MAX_SUM_LOOKUP;
         num /= MAX_SUM_LOOKUP;
         sum += sums_of_squares[digits];
-    } while(num > 0);
+    }
     return sum;
 }
 
