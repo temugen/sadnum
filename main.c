@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdio.h>
+#include <stdint.h>
 
 //#define PRECOMPUTED
 
@@ -7,7 +8,7 @@
 #define MAX_WORK 10000000
 #define THREAD_WORK (MAX_WORK / NUM_THREADS)
 
-int sums_of_squares[] = {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 1, 2, 5, 10, 17,
+unsigned int sums_of_squares[] = {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 1, 2, 5, 10, 17,
     26, 37, 50, 65, 82, 4, 5, 8, 13, 20, 29, 40, 53, 68, 85, 9, 10, 13, 18,
     25, 34, 45, 58, 73, 90, 16, 17, 20, 25, 32, 41, 52, 65, 80, 97, 25, 26,
     29, 34, 41, 50, 61, 74, 89, 106, 36, 37, 40, 45, 52, 61, 72, 85, 100, 117,
@@ -67,9 +68,9 @@ int sums_of_squares[] = {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 1, 2, 5, 10, 17,
     181, 198, 130, 131, 134, 139, 146, 155, 166, 179, 194, 211, 145, 146, 149,
     154, 161, 170, 181, 194, 209, 226, 162, 163, 166, 171, 178, 187, 198, 211,
     226, 243};
-const int len_sums_of_squares = sizeof(sums_of_squares) / sizeof(sums_of_squares[0]);
+const unsigned int len_sums_of_squares = sizeof(sums_of_squares) / sizeof(sums_of_squares[0]);
 
-int happiness[] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+unsigned int happiness[] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
     0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0,
@@ -110,7 +111,7 @@ int happiness[] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
     0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
     0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 1, 0};
-const int len_happiness = sizeof(happiness) / sizeof(happiness[0]);
+const unsigned int len_happiness = sizeof(happiness) / sizeof(happiness[0]);
 
 unsigned int calc_sum_of_squares(unsigned int num) {
     unsigned int sum = 0;
@@ -159,7 +160,7 @@ void *worker(void *work) {
     unsigned int start = (unsigned int)work, end = (start + THREAD_WORK);
     for(unsigned int i = start; i < end; i++)
         happy_count += is_happy(i);
-    pthread_exit((void *)happy_count);
+    pthread_exit((void *)(uintptr_t)happy_count);
 }
 
 int main(void) {
@@ -175,7 +176,7 @@ int main(void) {
 #endif
 
     for(unsigned int i = 0; i < NUM_THREADS; i++)
-        rc = pthread_create(&threads[i], &attr, worker, (void *)(i * THREAD_WORK));
+        rc = pthread_create(&threads[i], &attr, worker, (void *)(uintptr_t)(i * THREAD_WORK));
 
     unsigned int happy_count = 0;
     void *rv;
