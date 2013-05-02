@@ -1,12 +1,13 @@
 #include <pthread.h>
 #include <stdio.h>
 
+//#define PRECOMPUTED
+
 #define NUM_THREADS 20
 #define MAX_WORK 10000000
 #define THREAD_WORK (MAX_WORK / NUM_THREADS)
-#define MAX_SUM_LOOKUP 1000
 
-const int sums_of_squares[] = {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 1, 2, 5, 10, 17,
+int sums_of_squares[] = {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 1, 2, 5, 10, 17,
     26, 37, 50, 65, 82, 4, 5, 8, 13, 20, 29, 40, 53, 68, 85, 9, 10, 13, 18,
     25, 34, 45, 58, 73, 90, 16, 17, 20, 25, 32, 41, 52, 65, 80, 97, 25, 26,
     29, 34, 41, 50, 61, 74, 89, 106, 36, 37, 40, 45, 52, 61, 72, 85, 100, 117,
@@ -66,8 +67,9 @@ const int sums_of_squares[] = {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 1, 2, 5, 10, 
     181, 198, 130, 131, 134, 139, 146, 155, 166, 179, 194, 211, 145, 146, 149,
     154, 161, 170, 181, 194, 209, 226, 162, 163, 166, 171, 178, 187, 198, 211,
     226, 243};
+const int len_sums_of_squares = sizeof(sums_of_squares) / sizeof(sums_of_squares[0]);
 
-const int happiness[] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+int happiness[] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
     0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0,
@@ -108,19 +110,45 @@ const int happiness[] = {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
     0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
     0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 1, 0};
+const int len_happiness = sizeof(happiness) / sizeof(happiness[0]);
+
+unsigned int calc_sum_of_squares(unsigned int num) {
+    unsigned int sum = 0;
+    while(num > 0) {
+        unsigned int digit = num % 10;
+        num /= 10;
+        sum += (digit * digit);
+    }
+    return sum;
+}
+
+void fill_sums_of_squares() {
+    for(unsigned int i = 0; i < len_sums_of_squares; i++)
+        sums_of_squares[i] = calc_sum_of_squares(i);
+}
 
 unsigned int sum_of_squares(unsigned int num) {
     unsigned int sum = 0;
     while(num > 0) {
-        unsigned int digits = num % MAX_SUM_LOOKUP;
-        num /= MAX_SUM_LOOKUP;
+        unsigned int digits = num % len_sums_of_squares;
+        num /= len_sums_of_squares;
         sum += sums_of_squares[digits];
     }
     return sum;
 }
 
+void fill_happiness() {
+    happiness[0] = 0;
+    for(unsigned int i = 1; i < len_happiness; i++) {
+        unsigned int num = i;
+        while(num > 1 && num != 89)
+            num = sum_of_squares(num);
+        happiness[i] = (num == 1);
+    }
+}
+
 unsigned int is_happy(unsigned int num) {
-    while(num >= (sizeof(happiness) / sizeof(happiness[0])))
+    while(num >= len_happiness)
         num = sum_of_squares(num);
 
     return happiness[num];
@@ -140,6 +168,11 @@ int main(void) {
     int rc;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+#ifndef PRECOMPUTED
+    fill_sums_of_squares();
+    fill_happiness();
+#endif
 
     for(unsigned int i = 0; i < NUM_THREADS; i++)
         rc = pthread_create(&threads[i], &attr, worker, (void *)(i * THREAD_WORK));
